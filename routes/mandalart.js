@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const client = require('../db'); 
-const { v4: uuidv4 } = require('uuid'); 
+const client = require('../db'); // MySQL 클라이언트 사용
+const { v4: uuidv4 } = require('uuid'); // UUID 생성기
 
 // 메인 만다라트 경로
 router.get('/', (req, res) => {
@@ -27,7 +27,7 @@ router.get('/', (req, res) => {
     }
 });
 
-// 만다라트 생성 페이지 (get)
+// 만다라트 생성 페이지 (GET)
 router.get('/create', (req, res) => {
     const userCookie = req.cookies['USER'];
     const user = userCookie ? JSON.parse(userCookie) : null;
@@ -38,7 +38,6 @@ router.get('/create', (req, res) => {
         res.redirect('/signin');
     }
 });
-
 
 // 만다라트 저장 및 조회 페이지로 리디렉션
 router.get('/saveMandalart', (req, res) => {
@@ -149,8 +148,7 @@ router.post('/create', (req, res) => {
     }
 });
 
-
-/// 테두리스트 추가 처리
+// 테두리스트 추가 처리
 router.post('/addTedolist', (req, res) => {
     const userCookie = req.cookies['USER'];
     const user = userCookie ? JSON.parse(userCookie) : null;
@@ -253,88 +251,6 @@ router.get('/edit/:mandalartId', (req, res) => {
                                             acc[checklist.tedolist_number].push(checklist);
                                             return acc;
                                         }, {});
-                                        res.render("mandalart", {
-                                            title: 'Edit Mandalart',
-                                            mandalart: mandalartResult[0],
-                                            tedolists: tedolistResult,
-                                            checklists
-                                        });
-                                    }
-                                });
-                            } else {
-                                const checklists = {};
-                                res.render("mandalart", {
-                                    title: 'Edit Mandalart',
-                                    mandalart: mandalartResult[0],
-                                    tedolists: tedolistResult,
-                                    checklists
-                                });
-                            }
-                        }
-                    });
-                } else {
-                    res.status(404).send("Mandalart not found");
-                }
-            }
-        });
-    } else {
-        res.redirect('/signin');
-    }
-});
-
-
-// 체크리스트 목록 보여주기
-router.get('/checklists/:mandalartId/:tedolistNumber', (req, res) => {
-    const { mandalartId, tedolistNumber } = req.params;
-    client.query("SELECT * FROM checklist WHERE mandalart_id = ? AND tedolist_number = ? AND DATE(date) = CURDATE()", [mandalartId, tedolistNumber], (err, result) => {
-        if (err) {
-            console.log(err);
-            res.status(500).send("Server error");
-        } else {
-            res.json(result);
-        }
-    });
-});
-
-
-
-
-/////////////////////////////////////////////////
-//~~~~~ 수정모드 시작 ~~~~~
-
-
-// 만다라트 수정 페이지
-router.get('/change/:mandalartId', (req, res) => {
-    const userCookie = req.cookies['USER'];
-    const user = userCookie ? JSON.parse(userCookie) : null;
-    const { mandalartId } = req.params;
-
-    if (user) {
-        client.query("SELECT * FROM mandalart WHERE mandalart_id = ?", [mandalartId], (err, mandalartResult) => {
-            if (err) {
-                console.log(err);
-                res.status(500).send("Server error");
-            } else {
-                if (mandalartResult.length > 0) {
-                    client.query("SELECT * FROM tedolist WHERE mandalart_id = ?", [mandalartId], (err, tedolistResult) => {
-                        if (err) {
-                            console.log(err);
-                            res.status(500).send("Server error");
-                        } else {
-                            const tedolistIds = tedolistResult.map(tedolist => tedolist.tedolist_number);
-                            if (tedolistIds.length > 0) {
-                                client.query("SELECT * FROM checklist WHERE mandalart_id = ? AND tedolist_number IN (?)", [mandalartId, tedolistIds], (err, checklistResult) => {
-                                    if (err) {
-                                        console.log(err);
-                                        res.status(500).send("Server error");
-                                    } else {
-                                        const checklists = checklistResult.reduce((acc, checklist) => {
-                                            if (!acc[checklist.tedolist_number]) {
-                                                acc[checklist.tedolist_number] = [];
-                                            }
-                                            acc[checklist.tedolist_number].push(checklist);
-                                            return acc;
-                                        }, {});
                                         res.render("editMandalart", {
                                             title: 'Edit Mandalart',
                                             mandalart: mandalartResult[0],
@@ -364,15 +280,7 @@ router.get('/change/:mandalartId', (req, res) => {
     }
 });
 
-
-
-
-
-
-
-
-
-// 만다라트 수정 처리 (post)
+// 만다라트 수정 처리 (POST)
 router.post('/update/:mandalartId', (req, res) => {
     const userCookie = req.cookies['USER'];
     const user = userCookie ? JSON.parse(userCookie) : null;
@@ -442,47 +350,6 @@ router.delete('/deleteChecklist/:checklistId', (req, res) => {
     }
 });
 
-
-//체크리스트 목록 보여주기
-router.get('/checklists/:mandalartId/:tedolistNumber', (req, res) => {
-    const { mandalartId, tedolistNumber } = req.params;
-    client.query("SELECT * FROM checklist WHERE mandalart_id = ? AND tedolist_number = ?", [mandalartId, tedolistNumber], (err, result) => {
-        if (err) {
-            console.log(err);
-            res.status(500).send("Server error");
-        } else {
-            res.json(result);
-        }
-    });
-});
-
-
-router.put('/updateChecklistStatus/:checklistId', (req, res) => {
-    const userCookie = req.cookies['USER'];
-    const user = userCookie ? JSON.parse(userCookie) : null;
-    const { checklistId } = req.params;
-    const { is_checked } = req.body;
-
-    if (user) {
-        client.query("UPDATE checklist SET is_checked = ? WHERE checklist_id = ?", [is_checked, checklistId], (err, result) => {
-            if (err) {
-                console.log(err);
-                res.status(500).send("Server error");
-            } else {
-                res.status(200).json({ success: true });
-            }
-        });
-    } else {
-        res.status(401).json({ error: 'Unauthorized' });
-    }
-});
-
-
-
-
-//////////////////////////////////////
-// sen이 코드를 추가해보겠습니다......
-
 // 특정 유저의 만다라트를 가져오는 API
 router.get('/userMandalart/:userId', (req, res) => {
     const { userId } = req.params;
@@ -529,7 +396,7 @@ router.get('/userMandalart/:userId', (req, res) => {
     });
 });
 
-//캘린더 관려 코드 추가
+// 캘린더 관련 코드 추가
 // 특정 날짜의 테두리스트와 체크리스트를 가져오는 API
 router.get('/details/:date', (req, res) => {
     const { date } = req.params;
@@ -567,6 +434,18 @@ router.get('/details/:date', (req, res) => {
         res.status(401).json({ error: 'Unauthorized' });
     }
 });
-//여기까지 캘린더 관련 코드
+
+//체크리스트 목록 보여주기
+router.get('/checklists/:mandalartId/:tedolistNumber', (req, res) => {
+    const { mandalartId, tedolistNumber } = req.params;
+    client.query("SELECT * FROM checklist WHERE mandalart_id = ? AND tedolist_number = ?", [mandalartId, tedolistNumber], (err, result) => {
+        if (err) {
+            console.log(err);
+            res.status(500).send("Server error");
+        } else {
+            res.json(result);
+        }
+    });
+});
 
 module.exports = router;

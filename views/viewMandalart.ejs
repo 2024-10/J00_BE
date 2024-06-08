@@ -1,32 +1,58 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>View Mandalart</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/3.10.2/fullcalendar.min.css" rel="stylesheet">
     <link rel="stylesheet" href="/css/base.css">
     <link rel="stylesheet" href="/css/viewMandalart.css">
     <link rel="stylesheet" href="/css/comment.css">
-    <link rel="stylesheet" href="/css/calendar.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/3.10.2/fullcalendar.min.css" rel="stylesheet">
     <style>
         body {
             display: flex;
-            justify-content: center;
-            align-items: flex-start;
+            flex-direction: column; /* 상하 배치 */
+            justify-content: flex-start;
+            align-items: center;
             background-color: #F8F8E8;
             font-family: Arial, sans-serif;
         }
 
-        #calendar {
-            width: 100%;
+        .container {
+            display: flex;
+            flex-direction: row; /* 좌우 배치 */
+            justify-content: space-between;
+            align-items: flex-start;
+            width: 80%; /* 전체 너비 설정 */
             margin-top: 20px;
+        }
+
+        .mandalart-section,
+        .comment-section {
+            width: 48%; /* 공간을 적절히 나눔 */
+        }
+
+        .mandalart-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .comment-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .calendar-container {
+            width: 80%;
+            margin-top: 40px;
             display: flex;
             justify-content: center;
-            /* 수평 중앙 정렬 */
-            align-items: flex-end;
-            /* 수직 아래 정렬 */
+        }
+
+        #calendar {
+            width: 100%;
         }
 
         #details {
@@ -35,10 +61,6 @@
             padding: 20px;
             border-radius: 8px;
             width: 100%;
-        }
-
-        #details h3 {
-            margin-top: 0;
         }
 
         .todo-tabs-container {
@@ -101,7 +123,6 @@
         }
     </style>
 </head>
-
 <body>
     <header id="main-header">
         <a href="/">
@@ -109,52 +130,21 @@
         </a>
         <nav id="main-navigation">
             <ul class="menu">
-                <% if (user) { %>
-                    <!-- 로그인 상태일 때, 로그아웃 버튼 -->
-                    <li class="menu-item">
-                        <form id="logout-form" action="/logout" method="POST">
-                            <button type="submit" class="signup-link">로그아웃</button>
-                        </form>
-                    </li>
-                <% } else { %>
-                    <!-- 비로그인 상태일 때, 로그인 버튼 -->
-                    <li class="menu-item">
-                        <button onclick="window.location.href='/signin'" class="signup-link">로그인</button>
-                    </li>
-                <% } %>                
-                <li class="menu-item"><button onclick="window.location.href='/mandalart'" class="nav-button active">My
-                        Mandalart</button></li>
-                <li class="menu-item"><button onclick="window.location.href='/share'" class="nav-button">Share</button>
-                </li>
-                <li class="menu-item"><button onclick="window.location.href='/profile'"
-                        class="nav-button">Profile</button></li>
+                <li class="menu-item"><button onclick="window.location.href='/mandalart'" class="nav-button active">My Mandalart</button></li>
+                <li class="menu-item"><button onclick="window.location.href='/share'" class="nav-button">Share</button></li>
+                <li class="menu-item"><button onclick="window.location.href='/profile'" class="nav-button">Profile</button></li>
             </ul>
         </nav>
     </header>
-    <h3>나의 만다라트</h3>
-    <button onclick="window.location.href='/mandalart/change/<%= mandalart.mandalart_id %>'">수정</button>
+
     <div class="container">
-        <div class="editContainer">
-            <% tedolists.forEach((tedolist, index)=> { %>
-                <input type="text" class="tedolist-detail-input" value="<%= tedolist.tedolist_detail %>" readonly />
-                <input type="hidden" class="tedolist-number" value="<%= tedolist.tedolist_number %>" />
-                <% if (checklists[tedolist.tedolist_number]) { %>
-                    <ul class="checklist" id="checklist-<%= tedolist.tedolist_number %>" style="display:none;">
-                        <% checklists[tedolist.tedolist_number].forEach(checklist=> { %>
-                            <li>
-                                <%= checklist.checklist_detail %>
-                            </li>
-                            <% }); %>
-                    </ul>
-                    <% } %>
-                        <% }); %>
-                            <div id="checklist-container">
-                                <ul id="checklist-list"></ul>
-                            </div>
+        <div class="mandalart-section">
+            <h3>나의 만다라트</h3>
+            <button onclick="window.location.href='/mandalart/change/<%= mandalart.mandalart_id %>'">수정</button>
+            <div id="mandalart-grid" class="mandalart grid-<%= mandalart.tedolist_count %>"></div>
         </div>
-        <div id="mandalart-grid" class="mandalart grid-<%= mandalart.tedolist_count %>"></div>
-        <!-- 댓글 표시 영역 -->
-        <div id="comment-section">
+        
+        <div class="comment-section" id="comment-section">
             <h4>댓글 (<span id="comment-count">0</span>)</h4>
             <ul id="comment-list"></ul>
             <div id="new-comment-section">
@@ -162,6 +152,9 @@
                 <button id="add-comment-button">댓글 작성</button>
             </div>
         </div>
+    </div>
+
+    <div class="calendar-container">
         <div id="calendar"></div>
         <div id="details">
             <h3>Details for <span id="selected-date"></span></h3>
@@ -399,5 +392,4 @@
         });
     </script>
 </body>
-
 </html>
