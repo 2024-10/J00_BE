@@ -25,49 +25,51 @@ app.use(cookieParser());
 // 정적 파일 미들웨어
 app.use(express.static(path.join(__dirname, 'public')));
 
+// 전역적으로 `user` 변수를 설정하는 미들웨어 추가
+app.use((req, res, next) => {
+    const userCookie = req.cookies ? req.cookies['USER'] : null;
+    res.locals.user = userCookie ? JSON.parse(userCookie) : null;
+    next();
+});
+
 // 라우트 설정
 app.use('/api/users', usersRouter);
 app.use('/api/share', shareRouter);
 app.use('/api/add_friend', addFriendRouter);
 app.use('/mandalart', mandalartRouter); // Use mandalart routes
 app.use('/comment', commentRouter);
-
 app.use('/calendar', calendarRouter);
-
 
 // 뷰 라우트 설정
 app.get('/signup', (req, res) => {
     res.render('signup', { title: 'Sign Up' });
 });
+
 app.get('/signin', (req, res) => {
     res.render('signin', { title: 'Sign In' });
 });
+
 app.get('/share', (req, res) => {
-    const userCookie = req.cookies['USER'];
-    if (!userCookie) {
+    if (!res.locals.user) {
         return res.redirect('/signin');
     }
     res.render('share', { title: 'Share' });
 });
 
 app.get('/add_friend', (req, res) => {
-    const userCookie = req.cookies['USER'];
-    if (!userCookie) {
+    if (!res.locals.user) {
         return res.redirect('/signin');
     }
     res.render('add_friend', { title: 'Add Friend' });
 });
-app.get('/', (req, res) => {
-    const userCookie = req.cookies['USER'];
-    const user = userCookie ? JSON.parse(userCookie) : null;
-    res.render('home', { title: 'Home', user });
-});
-app.get('/profile', (req, res) => {
-    const userCookie = req.cookies['USER'];
-    const user = userCookie ? JSON.parse(userCookie) : null;
 
-    if (user) {
-        client.query('SELECT * FROM user WHERE user_id = ?', [user.user_id], (err, results) => {
+app.get('/', (req, res) => {
+    res.render('home', { title: 'Home' });
+});
+
+app.get('/profile', (req, res) => {
+    if (res.locals.user) {
+        client.query('SELECT * FROM user WHERE user_id = ?', [res.locals.user.user_id], (err, results) => {
             if (err) {
                 console.error(err);
                 return res.status(500).send('Server error');
@@ -83,14 +85,15 @@ app.get('/profile', (req, res) => {
         res.redirect('/signin');
     }
 });
+
 app.get('/share_viewMandalart', (req, res) => {
-    const userCookie = req.cookies['USER'];
-    if (!userCookie) {
+    if (!res.locals.user) {
         return res.redirect('/signin');
     }
     res.render('share_viewMandalart', { title: 'Share' });
 });
 
+// 스케줄 작업
 schedule.scheduleJob('0 0 * * *', async () => {
     try {
         // 어제 날짜를 'YYYY-MM-DD' 형식으로 가져옴
@@ -134,7 +137,11 @@ schedule.scheduleJob('0 0 * * *', async () => {
     }
 });
 
-
+// 로그아웃 라우트
+app.post('/logout', (req, res) => {
+    res.clearCookie('USER');
+    res.redirect('/signin');
+});
 
 // 서버 시작
 const PORT = process.env.PORT || 5006;
